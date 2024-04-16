@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Drawings List</title>
+  </head>
+  <body>
+    <h1>Drawings List</h1>
+    <button id="deleteAllButton">Delete All Drawings</button>
+
+    <ul id="drawingsList"></ul>
+
+    <script>
+      let apiUrl = 'https://thesis-data.onrender.com/drawings';
+      // let apiUrl = 'http://localhost:8080/drawings';
+
+      // Function to fetch data from JSON file
+      async function fetchData() {
+        const response = await fetch('db.json');
+        const data = await response.json();
+        return data;
+      }
+
+      // Function to delete all drawings from the server
+      async function deleteAllDrawings() {
+        const data = await fetchData();
+        const deletePromises = data.drawings.map((drawing) => deleteDrawing(drawing.id));
+        const deleteResponses = await Promise.all(deletePromises);
+        return deleteResponses;
+      }
+
+      // Function to delete a drawing from the server using DELETE request
+      async function deleteDrawing(id) {
+        const response = await fetch(`${apiUrl}/${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        return response;
+      }
+
+      // Function to populate the list with "id" and "name" values
+      async function populateList() {
+        const data = await fetchData();
+        const drawingsList = document.getElementById('drawingsList');
+
+        // Iterate through each item in the "drawings" array
+        data.drawings.forEach((drawing) => {
+          const listItem = document.createElement('li');
+          listItem.textContent = `ID: ${drawing.id}, Name: ${drawing.name}`;
+
+          // Create delete button and attach event listener
+          const deleteButton = document.createElement('button');
+          deleteButton.textContent = 'Delete';
+          deleteButton.addEventListener('click', async () => {
+            const confirmDelete = confirm('Are you sure you want to delete this item?');
+            if (confirmDelete) {
+              const deleteResponse = await deleteDrawing(drawing.id);
+              if (deleteResponse.ok) {
+                alert('Item deleted successfully!');
+                location.reload(); // Refresh the page to reflect changes
+              } else {
+                alert('Error deleting item!');
+              }
+            }
+          });
+
+          // Append delete button to list item
+          listItem.appendChild(deleteButton);
+
+          // Append list item to drawings list
+          drawingsList.appendChild(listItem);
+        });
+      }
+
+      // Function to handle click event on Delete All Drawings button
+      document.getElementById('deleteAllButton').addEventListener('click', async () => {
+        const confirmDelete = confirm('Are you sure you want to delete all drawings?');
+        if (confirmDelete) {
+          const deleteResponses = await deleteAllDrawings();
+          if (deleteResponses.every((response) => response.ok)) {
+            alert('All drawings deleted successfully!');
+            location.reload(); // Refresh the page to reflect changes
+          } else {
+            alert('Error deleting drawings!');
+          }
+        }
+      });
+
+      // Call the populateList function when the page loads
+      window.onload = populateList;
+    </script>
+  </body>
+</html>
