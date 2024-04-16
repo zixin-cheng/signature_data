@@ -8,26 +8,15 @@
   <body>
     <h1>Drawings List</h1>
     <button id="deleteAllButton">Delete All Drawings</button>
-
     <ul id="drawingsList"></ul>
 
     <script>
       let apiUrl = 'https://thesis-data.onrender.com/drawings';
-      // let apiUrl = 'http://localhost:8080/drawings';
-
       // Function to fetch data from JSON file
       async function fetchData() {
         const response = await fetch(apiUrl);
         const data = await response.json();
         return data;
-      }
-
-      // Function to delete all drawings from the server
-      async function deleteAllDrawings() {
-        const data = await fetchData();
-        const deletePromises = data.drawings.map((drawing) => deleteDrawing(drawing.id));
-        const deleteResponses = await Promise.all(deletePromises);
-        return deleteResponses;
       }
 
       // Function to delete a drawing from the server using DELETE request
@@ -41,13 +30,34 @@
         return response;
       }
 
+      // Function to delete all drawings from the server
+      async function deleteAllDrawings() {
+        const data = await fetchData();
+        if (!data) {
+          alert('No drawings found!');
+          return;
+        }
+
+        const deletePromises = data.map((drawing) => deleteDrawing(drawing.id));
+        const deleteResponses = await Promise.all(deletePromises);
+        return deleteResponses;
+      }
+
       // Function to populate the list with "id" and "name" values
       async function populateList() {
         const data = await fetchData();
+        console.log(data);
         const drawingsList = document.getElementById('drawingsList');
 
+        if (!data) {
+          const noDrawingsMessage = document.createElement('li');
+          noDrawingsMessage.textContent = 'No drawings available.';
+          drawingsList.appendChild(noDrawingsMessage);
+          return;
+        }
+
         // Iterate through each item in the "drawings" array
-        data.drawings.forEach((drawing) => {
+        data.forEach((drawing) => {
           const listItem = document.createElement('li');
           listItem.textContent = `ID: ${drawing.id}, Name: ${drawing.name}`;
 
@@ -69,7 +79,6 @@
 
           // Append delete button to list item
           listItem.appendChild(deleteButton);
-
           // Append list item to drawings list
           drawingsList.appendChild(listItem);
         });
@@ -80,7 +89,7 @@
         const confirmDelete = confirm('Are you sure you want to delete all drawings?');
         if (confirmDelete) {
           const deleteResponses = await deleteAllDrawings();
-          if (deleteResponses.every((response) => response.ok)) {
+          if (deleteResponses && deleteResponses.every((response) => response.ok)) {
             alert('All drawings deleted successfully!');
             location.reload(); // Refresh the page to reflect changes
           } else {
